@@ -89,7 +89,7 @@ const server = http.createServer((req, res) => {
   const forceParrot = query.parrot === '1';
 
   if (!isCurl && !forceParrot) {
-    res.writeHead(302, { Location: 'https://github.com/hugomd/parrot.live' });
+    res.writeHead(302, { Location: 'https://dromer.dev' });
     return res.end();
   }
 
