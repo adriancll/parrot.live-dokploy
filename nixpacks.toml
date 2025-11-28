@@ -1,5 +1,6 @@
+# Fixed nixpacks.toml for parrot.live
 [phases.setup]
-nixPkgs = ['nodejs-20', 'npm']
+nixPkgs = ['nodejs', 'npm']
 
 [phases.install]
 cmds = ['npm ci --include=dev']
@@ -8,4 +9,4 @@ cmds = ['npm ci --include=dev']
 cmds = []
 
 [phases.run]
-cmd = 'node index.js'
+cmd = 'PARROT_PORT=${PORT:-3000} node index.js'
