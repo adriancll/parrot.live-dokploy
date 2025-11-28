@@ -4,4 +4,5 @@ COPY package*.json ./
 RUN npm install --production --no-optional
 COPY . .
 EXPOSE 3000
-CMD ["sh", "-c", "FORCE_COLOR=1 node index.js"]
+# FORCE_COLOR=1 + explicit port binding
+CMD sh -c 'FORCE_COLOR=1 PARROT_PORT=${PORT:-3000} node index.js'
