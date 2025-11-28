@@ -5,8 +5,7 @@ const url = require('url');
 const { Readable } = require('stream');
 const colors = require('colors/safe');
 
-// Setup frames in memory
-// Load frames into memory once
+// Setup frames in memory (unchanged)
 let original = [];
 let flipped = [];
 
@@ -31,22 +30,15 @@ let flipped = [];
 });
 
 const colorsOptions = [
-  'red',
-  'yellow',
-  'green',
-  'blue',
-  'magenta',
-  'cyan',
-  'white'
+  'red', 'yellow', 'green', 'blue', 
+  'magenta', 'cyan', 'white'
 ];
 const numColors = colorsOptions.length;
 const selectColor = previousColor => {
   let color;
-
   do {
     color = Math.floor(Math.random() * numColors);
   } while (color === previousColor);
-
   return color;
 };
 
@@ -57,14 +49,9 @@ function streamer(stream, opts) {
   let timer;
 
   function tick() {
-    // clear screen
     stream.push('\u001b[2J\u001b[3J\u001b[H');
-
-    // color frame
     const colorIdx = lastColor = selectColor(lastColor);
     const coloredFrame = colors[colorsOptions[colorIdx]](frames[index]);
-
-    // try to push; respect backpressure
     const ok = stream.push(coloredFrame);
     index = (index + 1) % frames.length;
 
@@ -77,16 +64,13 @@ function streamer(stream, opts) {
     }
   }
 
-  // start
   tick();
-
-  // cleanup function
-  return () => {
-    clearTimeout(timer);
-  };
+  return () => clearTimeout(timer);
 }
 
-const validateQuery = ({ flip }) => ({ flip: String(flip).toLowerCase() === 'true' });
+const validateQuery = ({ flip }) => ({ 
+  flip: String(flip).toLowerCase() === 'true' 
+});
 
 const server = http.createServer((req, res) => {
   // Healthcheck route
@@ -95,24 +79,29 @@ const server = http.createServer((req, res) => {
     return res.end(JSON.stringify({ status: 'ok' }));
   }
 
-  if (
-    req.headers &&
-    req.headers['user-agent'] &&
-    !req.headers['user-agent'].includes('curl')
-  ) {
+  // 🚀 NEW LOGIC: Show parrot to curl, browsers, OR ?parrot=1
+  const query = url.parse(req.url, true).query;
+  const userAgent = req.headers['user-agent'] || '';
+  const isCurl = userAgent.includes('curl');
+  const isBrowser = userAgent.includes('Mozilla') || userAgent.includes('Chrome') || userAgent.includes('Safari');
+  const forceParrot = query.parrot === '1';
+
+  if (!isCurl && !isBrowser && !forceParrot) {
     res.writeHead(302, { Location: 'https://github.com/hugomd/parrot.live' });
     return res.end();
   }
 
+  // Serve animated parrot 🦜
   const stream = new Readable({ read() {} });
-  res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+  res.writeHead(200, { 
+    'Content-Type': 'text/plain; charset=utf-8',
+    'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'
+  });
   stream.pipe(res);
 
-  // Start streaming with cleanup handler
-  const opts = validateQuery(url.parse(req.url, true).query);
+  const opts = validateQuery(query);
   const cleanupLoop = streamer(stream, opts);
 
-  // Clean up when the client disconnects
   const onClose = () => {
     cleanupLoop();
     stream.destroy();
@@ -121,9 +110,9 @@ const server = http.createServer((req, res) => {
   res.on('error', onClose);
 });
 
-const port = process.env.PARROT_PORT || 3000;
+// Use platform port (Cloudflare/Dokploy auto-sets $PORT)
+const port = process.env.PORT || process.env.PARROT_PORT || 3000;
 server.listen(port, err => {
   if (err) throw err;
-  console.log(`Listening on http://localhost:${port}`);
+  console.log(`🦜 Parrot dancing on http://localhost:${port}`);
 });
-
