@@ -49,7 +49,7 @@ function streamer(stream, opts) {
   let timer;
 
   function tick() {
-    // Full screen clear + rainbow colors RESTORED
+    // Full screen clear + rainbow colors
     stream.push('\u001b[2J\u001b[3J\u001b[H');
     
     const colorIdx = lastColor = selectColor(lastColor);
@@ -89,7 +89,13 @@ const server = http.createServer((req, res) => {
   const forceParrot = query.parrot === '1';
 
   if (!isCurl && !forceParrot) {
-    res.writeHead(302, { Location: 'https://dromer.dev' });
+    // 🚀 ANTI-CACHE REDIRECT HEADERS - FIXES INTERMITTENT "MOVED PERMANENTLY"
+    res.writeHead(302, { 
+      Location: 'https://dromer.dev',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
     return res.end();
   }
 
@@ -97,7 +103,7 @@ const server = http.createServer((req, res) => {
   const stream = new Readable({ read() {} });
   res.writeHead(200, { 
     'Content-Type': 'text/plain; charset=utf-8',
-    'Cache-Control': 'no-store, no-cache'
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0'
   });
   stream.pipe(res);
 
