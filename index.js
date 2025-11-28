@@ -5,7 +5,7 @@ const url = require('url');
 const { Readable } = require('stream');
 const colors = require('colors/safe');
 
-// Setup frames in memory (unchanged)
+// Setup frames in memory
 let original = [];
 let flipped = [];
 
@@ -49,9 +49,12 @@ function streamer(stream, opts) {
   let timer;
 
   function tick() {
+    // Full screen clear + rainbow colors RESTORED
     stream.push('\u001b[2J\u001b[3J\u001b[H');
+    
     const colorIdx = lastColor = selectColor(lastColor);
     const coloredFrame = colors[colorsOptions[colorIdx]](frames[index]);
+    
     const ok = stream.push(coloredFrame);
     index = (index + 1) % frames.length;
 
@@ -79,23 +82,22 @@ const server = http.createServer((req, res) => {
     return res.end(JSON.stringify({ status: 'ok' }));
   }
 
-  // 🚀 NEW LOGIC: Show parrot to curl, browsers, OR ?parrot=1
+  // CURL-ONLY + ?parrot=1 bypass (rainbow colors!)
   const query = url.parse(req.url, true).query;
   const userAgent = req.headers['user-agent'] || '';
   const isCurl = userAgent.includes('curl');
-  const isBrowser = userAgent.includes('Mozilla') || userAgent.includes('Chrome') || userAgent.includes('Safari');
   const forceParrot = query.parrot === '1';
 
-  if (!isCurl && !isBrowser && !forceParrot) {
+  if (!isCurl && !forceParrot) {
     res.writeHead(302, { Location: 'https://github.com/hugomd/parrot.live' });
     return res.end();
   }
 
-  // Serve animated parrot 🦜
+  // RAINBOW PARROT for curl users only 🦜🌈
   const stream = new Readable({ read() {} });
   res.writeHead(200, { 
     'Content-Type': 'text/plain; charset=utf-8',
-    'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'
+    'Cache-Control': 'no-store, no-cache'
   });
   stream.pipe(res);
 
@@ -110,9 +112,8 @@ const server = http.createServer((req, res) => {
   res.on('error', onClose);
 });
 
-// Use platform port (Cloudflare/Dokploy auto-sets $PORT)
 const port = process.env.PORT || process.env.PARROT_PORT || 3000;
 server.listen(port, err => {
   if (err) throw err;
-  console.log(`🦜 Parrot dancing on http://localhost:${port}`);
+  console.log(`🦜 CURL-ONLY Rainbow Parrot on http://localhost:${port}`);
 });
